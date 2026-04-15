@@ -1,0 +1,20 @@
+# Root .envrc — default context for the project root
+# Copy to .envrc and run: direnv allow
+#
+# At the project root, no specific account is active.
+# cd into a results/{config}-{account}/ directory to activate one.
+
+# ── Shared project-level vars ─────────────────────────────────────
+export GWS_SHOOTOUT_ROOT="$PWD"
+export GWS_TEST_CALENDAR="GWS Shootout"
+
+# ── Default: no account active ────────────────────────────────────
+# These get overridden by subdirectory .envrc files
+export GWS_ACCOUNT=""
+export GWS_TARGET_ACCOUNT=""
+export GWS_ACCOUNT_LABEL="none"
+export GWS_CONFIG=""
+
+# ── Credential storage root ──────────────────────────────────────
+# All OAuth credentials and tokens stored here, organized by account label
+export GWS_CREDENTIALS_DIR="${HOME}/.config/gws"

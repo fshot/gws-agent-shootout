@@ -1,0 +1,37 @@
+# Example .envrc for a results subdirectory
+# Copy to results/{config}-{account}/.envrc and direnv allow it.
+#
+# This loads the right account env when you cd into the directory.
+
+# ── Detect account from directory name ────────────────────────────
+# Extracts "gmail" or "workspace" from the directory name pattern:
+#   results/claude-code-gws-cli-gmail → gmail
+#   results/codex-mcp-workspace → workspace
+_dir_name=$(basename "$PWD")
+_account="${_dir_name##*-}"
+
+if [[ "$_account" == "gmail" ]]; then
+  source_env ../../envs/gmail.env
+elif [[ "$_account" == "workspace" ]]; then
+  source_env ../../envs/workspace.env
+else
+  echo "direnv: could not detect account from directory name: $_dir_name" >&2
+  echo "direnv: expected directory name ending in -gmail or -workspace" >&2
+fi
+
+# ── Extract config from directory name ────────────────────────────
+# Map directory prefix to config ID
+case "$_dir_name" in
+  claude-cowork-*)   export GWS_CONFIG=A ;;
+  claude-code-gws-*) export GWS_CONFIG=B ;;
+  claude-code-mcp-*) export GWS_CONFIG=C ;;
+  codex-gws-*)       export GWS_CONFIG=D ;;
+  codex-mcp-*)       export GWS_CONFIG=D2 ;;
+  gemini-cli-*)      export GWS_CONFIG=E ;;
+  chatgpt-*)         export GWS_CONFIG=F ;;
+  *)                 export GWS_CONFIG=X ;;
+esac
+
+export GWS_ARTIFACT_PREFIX="[GWS-${GWS_CONFIG}]"
+
+unset _dir_name _account

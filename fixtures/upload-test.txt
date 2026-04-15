@@ -1,0 +1,11 @@
+GWS Agent Shootout — Upload Test File
+
+This file is uploaded by every agent configuration during operation #2 (Drive: upload).
+Its content must match byte-for-byte after upload to pass the test.
+
+Config: {CONFIG}
+Account: {ACCOUNT}
+Timestamp: {TIMESTAMP}
+
+Line count: 10
+Checksum anchor: gws-shootout-upload-v1

@@ -1,0 +1,26 @@
+{
+  "account": "fshotwell@cruxcapacity.com",
+  "seeded_at": null,
+  "artifacts": {
+    "drive_file": {
+      "name": "gws-shootout-seed.txt",
+      "id": null
+    },
+    "doc": {
+      "name": "GWS Shootout — Seed Document",
+      "id": null
+    },
+    "sheet": {
+      "name": "GWS Shootout — Seed Sheet",
+      "id": null
+    },
+    "calendar": {
+      "name": "GWS Shootout",
+      "id": null
+    },
+    "calendar_event": {
+      "name": "GWS Shootout — Seed Event",
+      "id": null
+    }
+  }
+}

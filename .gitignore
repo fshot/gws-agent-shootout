@@ -1,3 +1,13 @@
 .playwright-mcp/
 .DS_Store
 node_modules/
+
+# direnv / environment
+.env
+.env.local
+.envrc
+
+# Keep the examples
+!.env.example
+!.envrc.example
+!envs/.envrc.example
