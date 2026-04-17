@@ -65,10 +65,10 @@ echo "Account: ${EMAIL}"
 echo "Starting at: $(date -Iseconds)"
 echo ""
 
-# Run Codex in full-auto mode with JSON output
-# Tee to both terminal and output file
+# Run Codex with full access sandbox (needed for network + keyring access to gws CLI)
+# --full-auto uses workspace-write sandbox which blocks network; gws needs DNS + HTTPS
 codex exec \
-  --full-auto \
+  --dangerously-bypass-approvals-and-sandbox \
   --json \
   "$PROMPT" \
   2>&1 | tee "$RESULTS_DIR/codex-raw-output.jsonl"

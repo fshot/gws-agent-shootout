@@ -1,233 +1,78 @@
 # GWS Agent Shootout v2
 
-Structured comparison of AI agent tools for programmatic Google Workspace access. Can an AI agent create, read, edit, and share Docs, Sheets, Drive files, Gmail, and Calendar events on your behalf?
+Structured comparison of AI agent tools for programmatic Google Workspace access. We tested 7 agent/connector configurations — each against a personal Gmail and a paid Workspace account — running 15 component tests across Drive, Docs, Sheets, Gmail, and Calendar, plus a 6-step integration test simulating a real meeting workflow. 13 of 14 planned runs completed.
 
-This is the v2 follow-up to a [sloppy first attempt](https://cruxcapacity.com/blog/2026-04-14-ai-google-workspace-v1/) where Claude drove the research with no protocol and produced disorganized results. Same tools, same person, same Claude — better structure.
+This is the v2 follow-up to a [sloppy first attempt](https://cruxcapacity.com/blog/2026-04-14/) where Claude drove the research with no protocol. Same tools, same person, same Claude — better structure.
 
-**Status: protocol complete, testing not yet started.**
+## Results
 
-## What we're testing
+Component test pass rates (15 tests per run):
 
-Seven agent/connector combinations, each against a personal Gmail and a paid Google Workspace account (14 total runs). Each run executes 15 component tests across Drive, Docs, Sheets, Gmail, and Calendar, plus a 6-step integration test simulating a real meeting workflow.
+| Config | Agent | Connector | Gmail | Workspace | Interventions |
+|--------|-------|-----------|-------|-----------|---------------|
+| **B** | Claude Code | GWS CLI | [15/15](results/claude-code-gws-cli-gmail/session-log.md) | [15/15](results/claude-code-gws-cli-workspace/session-log.md) | 0 |
+| **D** | Codex CLI | GWS CLI | [15/15](results/codex-gws-cli-gmail/session-log.md) | [15/15](results/codex-gws-cli-workspace/session-log.md) | 1^a |
+| **D2** | Codex CLI | google_workspace_mcp | [15/15](results/codex-mcp-gmail/session-log.md) | [15/15](results/codex-mcp-workspace/session-log.md) | 0 |
+| **C** | Claude Code | google_workspace_mcp | [15/15](results/claude-code-mcp-gmail/session-log.md) | [14/15](results/claude-code-mcp-workspace/session-log.md) | 1^b |
+| **A** | Claude Desktop | google_workspace_mcp | [14/15](results/claude-cowork-connectors-gmail/session-log.md) | [15/15](results/claude-cowork-connectors-workspace/session-log.md) | 2^c |
+| **F** | ChatGPT | Built-in connectors | [10/15](results/chatgpt-drive-gmail/session-log.md) | — | ~8^d |
+| **E** | Gemini CLI | Workspace extension | [9/15](results/gemini-cli-workspace-gmail/session-log.md) | [6/15*](results/gemini-cli-workspace-workspace/session-log.md) | 0 |
 
-| Config | Agent | GWS Connector |
-|--------|-------|---------------|
-| **A** | Claude Cowork (desktop) | Built-in connectors |
-| **B** | Claude Code | GWS CLI |
-| **C** | Claude Code | [google_workspace_mcp](https://github.com/taylorwilsdon/google_workspace_mcp) |
-| **D** | Codex CLI | GWS CLI |
-| **D2** | Codex CLI | google_workspace_mcp |
-| **E** | Gemini CLI | [Workspace extension](https://github.com/gemini-cli-extensions/workspace) |
-| **F** | ChatGPT | Google Drive connector |
+Integration test (6-step meeting lifecycle): Configs A, B, C, D, D2 scored 6/6 on both accounts. Config F scored 5/6. Config E scored 3/6 (gmail).
 
-Full protocol: [CLAUDE.md](CLAUDE.md)
+**\*** E/workspace results are invalid — the extension silently used the gmail account's credentials for all operations.
 
----
+^a Codex `--full-auto` sandbox blocks network; required `--dangerously-bypass-approvals-and-sandbox`. Free-tier quota exhausted by one run.
+^b OAuth re-auth triggered mid-test for Sheets scopes (incremental scoping).
+^c OAuth re-auth for account switch + 18 per-tool permission prompts in Claude Desktop.
+^d Every ChatGPT tool call requires manual approval via modal dialog.
 
-## Operator Guide
+## Recommendations
 
-This section is for the human running the shootout. Claude Code orchestrates most of the work, but you need to handle prerequisites, authentication flows, and a few manual steps.
+**Full CRUD across all GWS services:** Use GWS CLI with Claude Code (config B) or Codex (config D). Only connector that passed all 15 tests on both accounts with no tool-level workarounds.
 
-### Prerequisites
+**Desktop experience without a CLI:** Use Claude Desktop with google_workspace_mcp (config A). 14-15/15 on both accounts. Functional coverage is nearly equivalent to GWS CLI; doc creation is more verbose.
 
-Before starting, make sure you have:
+**Headless/scheduled operation:** GWS CLI configs (B, D) only. MCP configs can work but need OAuth token monitoring. ChatGPT has no headless mode.
 
-- [ ] **Claude Code** installed and authenticated
-- [ ] **Codex CLI** installed (`npm i -g @openai/codex`) and `OPENAI_API_KEY` set
-- [ ] **Gemini CLI** installed and authenticated with Google
-- [ ] **ChatGPT** paid plan with Google Drive connector enabled
-- [ ] **GWS CLI** — will be installed during Phase 1 (config B setup)
-- [ ] **A GCP project** — will be created during Phase 1
-- [ ] Access to both test accounts:
-  - `fshotwell@gmail.com` (personal)
-  - `fshotwell@cruxcapacity.com` (Workspace)
+**Multiple Google accounts:** GWS CLI with direnv + profile directories. Seamless switching, zero manual intervention. MCP works with re-auth clicks. Gemini Workspace extension doesn't support it.
 
-### Quick start
+## How to Reproduce
 
-Open Claude Code in this directory and run:
+1. Read the full [protocol](CLAUDE.md) for test methodology, fixtures, and naming conventions
+2. Setup guides for each connector are in `results/{config}/setup.md`
+3. Test fixtures in `fixtures/` — seed data content, upload files, expected values
+4. Run with: `/seed {account}` then `/run-test {config} {account}` (see [commands reference](#commands-reference))
 
-```
-/project:next
-```
+## Methodology
 
-This tells you exactly what to do next. Follow its instructions, then run `/project:next` again. Repeat until done.
+The [full protocol](CLAUDE.md) defines 15 component operations and a 6-step integration test, each with exact test data, success criteria, and failure handling rules. Every run uses identical fixtures. Session logs record wall-clock timestamps, exact CLI output, error messages, and artifact IDs. The [synthesis](synthesis/comparison.md) was written by a separate session that read all raw logs — not by the session that ran the tests.
 
-### The workflow
+The [v1 experiment](https://cruxcapacity.com/blog/2026-04-14/) tested the same tools without a protocol. The v1/v2 process comparison is documented in the [blog post](synthesis/blog-draft.md).
 
-The project runs in six phases. You can run them one at a time with `/project:run-phase {N}` or one test at a time with `/project:run-test {config} {account}`.
-
-```
-Phase 0  →  Phase 1  →  Phase 2  →  Phase 3  →  Phase 4  →  Phase 5  →  Phase 6
- Seed        B(CLI)      C(MCP)     D,D2(Codex)  E,A,F       Synthesis   Cleanup
-```
-
-#### Phase 0 — Seed data
-
-Creates identical test fixtures in both Google accounts so every config tests against the same data.
-
-```
-/project:seed gmail
-/project:seed workspace
-```
-
-**What you'll need to do**: Approve OAuth consent screens during first-time authentication. The seed command will walk you through it.
-
-#### Phase 1 — Claude Code + GWS CLI (config B)
-
-This is the first real test run and also sets up the GWS CLI infrastructure that configs D and D2 will reuse.
-
-```
-/project:run-test B gmail
-/project:run-test B workspace
-```
-
-**What you'll need to do**: 
-- Install GWS CLI if not already installed
-- Create a GCP project, enable APIs, set up OAuth credentials
-- Approve the OAuth consent screen on first `gws` command
-
-Claude Code will guide you through setup and document every step in `setup.md`. This becomes the canonical GWS CLI setup guide.
-
-#### Phase 2 — Claude Code + MCP (config C)
-
-Sets up the google_workspace_mcp server and tests it.
-
-```
-/project:run-test C gmail
-/project:run-test C workspace
-```
-
-**What you'll need to do**: Clone the MCP repo, install dependencies, configure OAuth (may reuse GCP project from Phase 1). Approve consent screens.
-
-#### Phase 3 — Codex CLI (configs D, D2)
-
-These run autonomously — Claude Code dispatches to Codex via wrapper scripts.
-
-```
-/project:run-phase 3
-```
-
-**What you'll need to do**:
-- Before D: Verify Codex can access `gws` CLI (should already be set up from Phase 1)
-- Before D2: Run `./scripts/setup-codex-mcp.sh <path-to-mcp>` to register the MCP server with Codex
-- Approve any first-time auth prompts if Codex hasn't authenticated with GWS yet
-
-Codex runs in `--full-auto` mode, reads `AGENTS.md` for instructions, and outputs structured results. Claude Code parses the output and writes the session logs.
-
-#### Phase 4 — Gemini, Cowork, ChatGPT (configs E, A, F)
-
-```
-/project:run-phase 4
-```
-
-**What you'll need to do**:
-- **Config E**: Before first run, install the Workspace extension: `./scripts/setup-gemini-workspace.sh`. Approve OAuth. After that, it runs autonomously via `./scripts/run-gemini.sh`.
-- **Config A**: Runs directly in Claude Code using built-in connectors. May prompt for Google Drive/Gmail/Calendar authorization.
-- **Config F**: This one is manual. Claude Code will print step-by-step instructions for you to execute in the ChatGPT web UI. Copy results back into the session log.
-
-#### Phase 5 — Synthesis
-
-```
-/project:synthesize
-```
-
-A fresh context reads all session logs and writes the comparison analysis and blog draft. No human input needed.
-
-#### Phase 6 — Cleanup
-
-```
-/project:cleanup both
-```
-
-Removes all test artifacts from both Google accounts. Will ask for confirmation before deleting.
-
-### Commands reference
+## Commands Reference
 
 | Command | What it does |
 |---------|-------------|
-| `/project:next` | One-line recommendation: what to do next |
-| `/project:status` | Full dashboard of all runs and done criteria |
-| `/project:seed gmail\|workspace` | Create seed test data in an account |
-| `/project:run-test {config} {account}` | Run one test (e.g., `B gmail`, `D2 workspace`) |
-| `/project:run-phase {0-6}` | Run all tests in a phase |
-| `/project:synthesize` | Write comparison + blog draft from all logs |
-| `/project:cleanup gmail\|workspace\|both` | Remove test artifacts from accounts |
+| `/next` | What to do next |
+| `/status` | Dashboard of all runs and done criteria |
+| `/seed gmail\|workspace` | Create seed test data |
+| `/run-test {config} {account}` | Run one test (e.g., `B gmail`) |
+| `/run-phase {0-6}` | Run all tests in a phase |
+| `/synthesize` | Write comparison + blog draft from all logs |
+| `/cleanup gmail\|workspace\|both` | Remove test artifacts |
 
-### When things go wrong
+## File Overview
 
-**Auth failures mid-run**: The test will mark operations as FAIL and continue. Re-authenticate and re-run the specific config/account.
-
-**Codex or Gemini crash**: Check the raw output files in the results directory (`codex-raw-output.jsonl` or `gemini-raw-output.json`). The exit code and error will be in the wrapper script output. Fix the issue and re-run.
-
-**Seed data missing**: `/project:run-test` checks for seed data before starting. If it's missing, it will tell you to run `/project:seed` first.
-
-**Want to re-run a test**: Just run `/project:run-test` again. It will warn you that a session log already exists and ask whether to overwrite.
-
-### Where results go
-
-```
-results/
-  claude-code-gws-cli-gmail/        # Config B, @gmail.com
-    setup.md                         # How GWS CLI was installed and configured
-    session-log.md                   # Test results: 15 component + 6 integration
-    screenshots/                     # Auth flows, consent screens, result verification
-  claude-code-mcp-workspace/         # Config C, @workspace
-    ...
-  codex-gws-cli-gmail/               # Config D — ran by Codex CLI autonomously
-    codex-raw-output.jsonl           # Raw Codex output (JSONL)
-    session-log.md                   # Parsed into standard format by Claude Code
-    ...
-```
-
-### Environment setup (direnv)
-
-The project uses `direnv` + `.env` files so that `cd`-ing into a results directory automatically loads the right Google account context. This means credentials, project IDs, and account emails switch seamlessly as you navigate between test directories.
-
-```bash
-# One-time setup
-./scripts/setup-direnv.sh
-
-# Verify
-cd results/claude-code-gws-cli-gmail
-echo $GWS_ACCOUNT      # → fshotwell@gmail.com
-echo $GWS_CONFIG        # → B
-
-cd ../codex-mcp-workspace
-echo $GWS_ACCOUNT      # → fshotwell@cruxcapacity.com
-echo $GWS_CONFIG        # → D2
-```
-
-The env files live in `envs/`:
-- `envs/gmail.env` — personal account variables
-- `envs/workspace.env` — Workspace account variables
-- `envs/.env.example` — template for adding new accounts
-
-OAuth credentials are stored in `~/.config/gws/`, organized by account label (e.g., `credentials-gmail.json`, `token-workspace.json`). This keeps secrets out of the repo and lets multiple projects share the same auth.
-
-#### Extending to other accounts
-
-This pattern works beyond the shootout. To add a client account:
-
-1. Copy `envs/.env.example` to `envs/{client-name}.env`, fill in the account details
-2. Create a project directory with the label as suffix (e.g., `my-project-clientname/`)
-3. Add a `.envrc` that sources the right env file (see `envs/.envrc.example`)
-4. `direnv allow` the directory
-
-Now `cd my-project-clientname` loads that client's Google context automatically — right credentials, right project, right scopes. No manual switching, no environment contamination between accounts.
-
-### File overview
-
-| File | Purpose |
+| Path | Purpose |
 |------|---------|
-| [CLAUDE.md](CLAUDE.md) | Full research protocol — the source of truth |
-| [AGENTS.md](AGENTS.md) | Test instructions for Codex CLI (configs D, D2) |
-| [GEMINI.md](GEMINI.md) | Test instructions for Gemini CLI (config E) |
-| [templates/publication-spec.md](templates/publication-spec.md) | Audience, voice, and structure for published outputs |
-| [templates/session-log-template.md](templates/session-log-template.md) | Template for raw test session logs |
-| [templates/setup-template.md](templates/setup-template.md) | Template for connector setup documentation |
+| [CLAUDE.md](CLAUDE.md) | Full research protocol |
+| [synthesis/comparison.md](synthesis/comparison.md) | Cross-config analysis with per-operation results |
+| [synthesis/blog-draft.md](synthesis/blog-draft.md) | Blog post draft |
+| [results/](results/) | Session logs, setup docs, raw output per config |
 | [fixtures/](fixtures/) | Seed data content and test fixtures |
-| [scripts/](scripts/) | Wrapper scripts for Codex/Gemini dispatch and setup |
-| [envs/](envs/) | Per-account `.env` files and direnv templates |
+| [skills/gws-cli-reference.md](skills/gws-cli-reference.md) | The ~1,900-token GWS CLI skill that eliminated 91K tokens of schema discovery |
+| [templates/](templates/) | Publication spec, session log template, setup template |
 
 ---
 

@@ -27,9 +27,16 @@ if ! command -v direnv &>/dev/null; then
   exit 1
 fi
 
-# Create credential storage directory
-mkdir -p "${HOME}/.config/gws"
-echo "Created credential directory: ~/.config/gws/"
+# Create profile directories for GWS CLI account switching
+mkdir -p "${HOME}/.config/gws/profiles/gmail"
+mkdir -p "${HOME}/.config/gws/profiles/crux"
+echo "Created GWS CLI profile directories:"
+echo "  ~/.config/gws/profiles/gmail/    (fshotwell@gmail.com)"
+echo "  ~/.config/gws/profiles/crux/     (fshotwell@cruxcapacity.com)"
+echo ""
+echo "Each profile needs: client_secret.json (from GCP Console)."
+echo "Run 'gws auth login' with GOOGLE_WORKSPACE_CLI_CONFIG_DIR pointed at the"
+echo "profile to generate credentials.enc and token_cache.json."
 
 # Set up root .envrc
 if [[ ! -f .envrc ]]; then
@@ -90,14 +97,15 @@ echo "  direnv allow . && for d in results/*/; do direnv allow \"\$d\"; done"
 echo ""
 echo "=== Verify ==="
 echo ""
-echo "Test it by cd-ing into a results directory:"
+echo "Test it by cd-ing into a results directory and running gws:"
 echo ""
 echo "  cd results/claude-code-gws-cli-gmail"
-echo "  echo \$GWS_ACCOUNT     # should print: fshotwell@gmail.com"
-echo "  echo \$GWS_CONFIG      # should print: B"
+echo "  gws auth status 2>&1 | grep user    # → fshotwell@gmail.com"
 echo ""
-echo "  cd ../codex-mcp-workspace"
-echo "  echo \$GWS_ACCOUNT     # should print: fshotwell@cruxcapacity.com"
-echo "  echo \$GWS_CONFIG      # should print: D2"
+echo "  cd ../claude-code-gws-cli-workspace"
+echo "  gws auth status 2>&1 | grep user    # → fshotwell@cruxcapacity.com"
+echo ""
+echo "The GOOGLE_WORKSPACE_CLI_CONFIG_DIR env var switches GWS CLI"
+echo "profiles automatically — no manual credential swapping needed."
 echo ""
 echo "=== Done ==="

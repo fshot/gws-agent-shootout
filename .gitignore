@@ -11,3 +11,11 @@ node_modules/
 !.env.example
 !.envrc.example
 !envs/.envrc.example
+
+# Scratch/working directory created by test runs
+.tmp/
+
+# Raw agent output logs — contain embedded Google resource IDs and OAuth URLs with
+# state tokens. The parsed results in session-log.md are the canonical evidence.
+results/*/codex-raw-output.jsonl
+results/*/gemini-raw-output.json

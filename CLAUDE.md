@@ -3,7 +3,7 @@
 ## Purpose
 
 Structured comparison of AI agent tools for programmatic Google Workspace access.
-This is the v2 follow-up to a [sloppy v1 experiment](https://cruxcapacity.com/blog/2026-04-14-ai-google-workspace-v1/)
+This is the v2 follow-up to a [sloppy v1 experiment](https://cruxcapacity.com/blog/2026-04-14/)
 where Claude drove the research with no protocol and produced disorganized results.
 
 The v1/v2 process comparison is part of the story: same tools, same person, same Claude, better structure.
@@ -280,37 +280,73 @@ This creates `.envrc` files in the project root and all 14 results directories. 
 |----------|---------|---------|
 | `GWS_ACCOUNT` | `fshotwell@gmail.com` | All scripts and connectors |
 | `GWS_TARGET_ACCOUNT` | `fshotwell@cruxcapacity.com` | Share/send operations |
-| `GWS_ACCOUNT_LABEL` | `gmail` | Credential file naming |
+| `GWS_ACCOUNT_LABEL` | `gmail` | Profile directory naming |
 | `GWS_CONFIG` | `B` | Artifact naming prefix |
 | `GWS_ARTIFACT_PREFIX` | `[GWS-B]` | Drive/Docs/Sheets/Calendar names |
-| `GCP_PROJECT` | `my-gws-project-123` | GCP API access |
-| `GOOGLE_CLIENT_CREDENTIALS` | `~/.config/gws/credentials-gmail.json` | OAuth client credentials |
-| `GOOGLE_TOKEN_PATH` | `~/.config/gws/token-gmail.json` | Stored OAuth token |
+| `GCP_PROJECT` | `hdca-workspace-tools` | GCP API access |
+| `GOOGLE_WORKSPACE_CLI_CONFIG_DIR` | `~/.config/gws/profiles/gmail` | GWS CLI profile directory |
+
+### How account switching works
+
+GWS CLI reads `GOOGLE_WORKSPACE_CLI_CONFIG_DIR` to find its config files (`client_secret.json`, `credentials.enc`, `token_cache.json`). Each account gets its own profile directory under `~/.config/gws/profiles/`. direnv sets this variable automatically when you `cd` into a results directory, so `gws` commands use the right account with zero manual credential swapping.
+
+```bash
+# Verify it works — cd between directories and check:
+cd results/claude-code-gws-cli-gmail
+gws auth status 2>&1 | grep user    # → fshotwell@gmail.com
+
+cd ../claude-code-gws-cli-workspace
+gws auth status 2>&1 | grep user    # → fshotwell@cruxcapacity.com
+```
+
+### Credential storage (profile directories)
+
+All OAuth credentials live in `~/.config/gws/profiles/`, one directory per account:
+
+```
+~/.config/gws/
+  profiles/
+    gmail/                           # Profile for fshotwell@gmail.com
+      client_secret.json             # OAuth client ID (from GCP Console)
+      credentials.enc                # Encrypted refresh token (from `gws auth login`)
+      token_cache.json               # Cached access token (auto-managed)
+    crux/                            # Profile for fshotwell@cruxcapacity.com
+      client_secret.json
+      credentials.enc
+      token_cache.json
+```
+
+This keeps credentials out of the project directory, lets multiple projects share the same auth, and supports seamless concurrent account switching via direnv.
+
+### Setting up a new profile
+
+```bash
+# 1. Create the profile directory
+mkdir -p ~/.config/gws/profiles/{label}
+
+# 2. Copy your GCP project's OAuth client credentials into it
+cp ~/Downloads/client_secret_*.json ~/.config/gws/profiles/{label}/client_secret.json
+
+# 3. Authenticate (sets credentials.enc + token_cache.json)
+GOOGLE_WORKSPACE_CLI_CONFIG_DIR=~/.config/gws/profiles/{label} \
+  gws auth login -s drive,docs,sheets,gmail,calendar
+```
 
 ### Extending to other accounts
 
 To add a new account context (e.g., a client project):
 
-1. Create `envs/{label}.env` from `envs/.env.example`
-2. Create the project directory with the label suffix (e.g., `my-project-clientname/`)
-3. Add a `.envrc` that sources the right env file
-4. `direnv allow` the directory
+1. Create a profile directory: `mkdir -p ~/.config/gws/profiles/{label}`
+2. Copy OAuth `client_secret.json` from the account's GCP project into the profile
+3. Run `gws auth login` with `GOOGLE_WORKSPACE_CLI_CONFIG_DIR` pointed at the profile
+4. Create `envs/{label}.env` from `envs/.env.example`, setting `GWS_ACCOUNT_LABEL={label}`
+5. Create a project directory with the label as suffix (e.g., `my-project-clientname/`)
+6. Add a `.envrc` that sources the right env file (see `envs/.envrc.example`)
+7. `direnv allow` the directory
 
-This pattern works beyond the shootout — any project that needs to switch between Google accounts can use the same structure.
+Now `cd my-project-clientname` loads that account's Google context automatically.
 
-### Credential storage
-
-All OAuth credentials and tokens live in `~/.config/gws/`, organized by account label:
-
-```
-~/.config/gws/
-  credentials-gmail.json       # OAuth client credentials (from GCP Console)
-  credentials-workspace.json
-  token-gmail.json             # OAuth token (written by first auth flow)
-  token-workspace.json
-```
-
-This keeps credentials out of the project directory and lets multiple projects share the same auth.
+**Token expiry**: In GCP OAuth "Testing" mode, refresh tokens expire every 7 days. If you see `invalid_rapt` or auth errors, re-run `gws auth login` with the profile's config dir set.
 
 ## File conventions
 
@@ -355,13 +391,13 @@ gws-agent-shootout/
     setup-template.md                 # Template for setup documentation
     publication-spec.md               # Audience, voice, structure for publishable outputs
   .claude/commands/                   # Slash commands for driving the workflow
-    seed.md                           # /project:seed {gmail|workspace}
-    run-test.md                       # /project:run-test {config} {account}
-    run-phase.md                      # /project:run-phase {0-6}
-    status.md                         # /project:status
-    next.md                           # /project:next
-    synthesize.md                     # /project:synthesize
-    cleanup.md                        # /project:cleanup {gmail|workspace|both}
+    seed.md                           # /seed {gmail|workspace}
+    run-test.md                       # /run-test {config} {account}
+    run-phase.md                      # /run-phase {0-6}
+    status.md                         # /status
+    next.md                           # /next
+    synthesize.md                     # /synthesize
+    cleanup.md                        # /cleanup {gmail|workspace|both}
 ```
 
 ## Session log rules
@@ -399,3 +435,4 @@ See `templates/publication-spec.md` for the full spec. Key points:
 - [ ] Blog draft v2 written, linking back to v1 for process comparison
 - [ ] README written as the public entry point
 - [ ] Cleanup completed and documented in `results/cleanup-log.md`
+- [ ] Token efficiency analysis: investigate Codex's 933K-token schema-reading pattern — can a condensed CLI reference or cached subskill eliminate the "tool discovery tax"? Generalize findings across agents. (See `results/codex-gws-cli-gmail/codex-raw-output.jsonl` for raw data.)

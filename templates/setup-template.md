@@ -72,9 +72,9 @@ Screenshot: `screenshots/consent-screen.png`
 
 | Artifact | Location | Notes |
 |----------|----------|-------|
-| OAuth token | | |
-| Config file | | |
-| Env vars | | |
+| GWS CLI profile | `~/.config/gws/profiles/{label}/` | Contains client_secret.json, credentials.enc, token_cache.json |
+| Env file | `envs/{label}.env` | Sets GOOGLE_WORKSPACE_CLI_CONFIG_DIR to the profile |
+| Env vars set by direnv | `GOOGLE_WORKSPACE_CLI_CONFIG_DIR`, `GWS_ACCOUNT`, `GCP_PROJECT` | Auto-loaded on `cd` into results directory |
 
 ## Account-type differences
 
