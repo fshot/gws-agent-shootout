@@ -44,7 +44,7 @@ Pass rates across all component tests (15 total) — gmail run first, workspace 
 
 The integration test (6-step meeting lifecycle) showed the same pattern: configs B, D, D2, C, and A all scored 6/6 on both accounts. Config F scored 5/6 (blocked by the calendar limitation). Config E scored 3/6 on gmail and 2/6 on the invalid workspace run.
 
-Full results, including per-operation timing, error messages, and artifact IDs, are in the [comparison analysis](https://github.com/fshot/gws-agent-shootout/blob/main/synthesis/comparison.md).
+Full results, including per-operation timing, error messages, and artifact IDs, are in the [comparison analysis](https://github.com/cruxcapacity/gws-agent-shootout/blob/main/synthesis/comparison.md).
 
 ## The Hidden Cost of Tool Discovery
 
@@ -58,7 +58,7 @@ MCP landed in between. The google_workspace_mcp server registers 70 tools with J
 
 The per-turn compounding is the real cost. Codex D generated a single bash script and ran all 21 operations in one command execution. Codex D2 made individual MCP tool calls — 12 separate round-trips, each carrying the full schema payload. The script approach used 3.3x fewer tokens for identical results.
 
-The kicker: the skill that eliminated all that waste wasn't written as a token optimization. It was a [reference file](https://github.com/fshot/gws-agent-shootout/blob/main/skills/gws-cli-reference.md) someone wrote while learning the tool three weeks earlier — command patterns, common operations, auth troubleshooting. Just good documentation practice. The 48x token savings was a side effect.
+The kicker: the skill that eliminated all that waste wasn't written as a token optimization. It was a [reference file](https://github.com/cruxcapacity/gws-agent-shootout/blob/main/skills/gws-cli-reference.md) someone wrote while learning the tool three weeks earlier — command patterns, common operations, auth troubleshooting. Just good documentation practice. The 48x token savings was a side effect.
 
 The takeaway: if you expect to do GWS work regularly, write a curated reference for your tools and embed it in your agent's instruction file. A cheat sheet costs 50x less than raw schema probing and produces better results. MCP's token overhead is real but overblown — an agent discovering an unfamiliar CLI burns comparable tokens on schema reads. The difference is that MCP's cost is visible in your system prompt while CLI discovery is hidden in shell output.
 
@@ -118,11 +118,11 @@ Now `cd results/claude-code-gws-cli-gmail && gws auth status` returns `fshotwell
 
 To add a new account: create a profile directory, drop in a `client_secret.json` from a GCP project, run `gws auth login` once, and create an env file. Total time: 5 minutes. After that, every AI agent that uses GWS CLI in that directory context — Claude Code, Codex, a cron job — gets the right Google identity automatically.
 
-This pattern isn't GWS-specific. Any CLI tool that reads credentials from an environment-variable-controlled path can use the same approach. The [full setup script](https://github.com/fshot/gws-agent-shootout/blob/main/scripts/setup-direnv.sh) and [env file templates](https://github.com/fshot/gws-agent-shootout/tree/main/envs) are in the repo.
+This pattern isn't GWS-specific. Any CLI tool that reads credentials from an environment-variable-controlled path can use the same approach. The [full setup script](https://github.com/cruxcapacity/gws-agent-shootout/blob/main/scripts/setup-direnv.sh) and [env file templates](https://github.com/cruxcapacity/gws-agent-shootout/tree/main/envs) are in the repo.
 
 ## What's Next
 
-The full test protocol, all 13 session logs, setup guides for each connector, and the raw data are in the [gws-agent-shootout repo](https://github.com/fshot/gws-agent-shootout). Everything needed to reproduce these results — or adapt the protocol for your own tool evaluation — is there.
+The full test protocol, all 13 session logs, setup guides for each connector, and the raw data are in the [gws-agent-shootout repo](https://github.com/cruxcapacity/gws-agent-shootout). Everything needed to reproduce these results — or adapt the protocol for your own tool evaluation — is there.
 
 The Workspace extension gaps (file upload, formatted docs, sheet writes) are specific to the current extension version. The Gemini CLI itself supports MCP servers and shell commands, so connecting it to GWS CLI or google_workspace_mcp would likely fill those gaps. We didn't test those cross-pairings because they aren't what Gemini users would naturally reach for today, but they're technically possible.
 
@@ -130,4 +130,4 @@ Similarly, ChatGPT's connector limitations may change as OpenAI expands their Go
 
 ---
 
-*This post is part of Crux Capacity's work on AI-assisted operations. The [v1 experiment](https://cruxcapacity.com/blog/2026-04-14/) and [full v2 protocol](https://github.com/fshot/gws-agent-shootout) are both public.*
+*This post is part of Crux Capacity's work on AI-assisted operations. The [v1 experiment](https://cruxcapacity.com/blog/2026-04-14/) and [full v2 protocol](https://github.com/cruxcapacity/gws-agent-shootout) are both public.*
